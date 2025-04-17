@@ -48,3 +48,18 @@
   [social-security-numbers]
   (first (filter vampire?
                  (map vampire-related-details social-security-numbers))))
+
+(def not-vampire? (complement vampire?))
+
+(defn identify-humans
+  [social-security-numbers]
+  (filter not-vampire?
+          (map vampire-related-details social-security-numbers)))
+
+(defn lousy-logger
+  [log-level message]
+  (condp = log-level
+    :warn (clojure.string/lower-case message)
+    :emergency (clojure.string/upper-case message)))
+
+(def warn (partial lousy-logger :warn))
