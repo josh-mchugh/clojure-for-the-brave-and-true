@@ -1,5 +1,6 @@
 (ns clojure-noob-ch6.core
   (:gen-class))
+(use '[clojure-noob-ch6.the-big-cheese :as big-cheese])
 
 ;; Create a vector of titles
 (def great-books ["East of Eden" "The Glass Bead Game"])
@@ -8,10 +9,10 @@
 (def great-books ["The Power of Bees" "Journey to Upstairs"])
 
 ;; Create a new namespace
-(create-ns 'cheese.taxonomy)
+;;(create-ns 'cheese.taxonomy)
 
 ;; this command creates a namespace if it does exists and switches you to it
-(in-ns 'cheese.taxonomy)
+;;(in-ns 'cheese.taxonomy)
 
 ;; creates fine vector of cheddars
 (def cheddars ["mild" "medium" "strong" "sharp" "extra sharp"])
@@ -24,3 +25,7 @@
 (defn- private-function
   "Just an example function that does nothing"
   [])
+
+(defn -main
+  [& args]
+  (big-cheese/solve-crime args))
