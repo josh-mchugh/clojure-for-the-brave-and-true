@@ -1,6 +1,7 @@
 (ns clojure-noob-ch6.core
+  (:use [clojure-noob-ch6.the-big-cheese :as big-cheese])
   (:gen-class))
-(use '[clojure-noob-ch6.the-big-cheese :as big-cheese])
+
 
 ;; Create a vector of titles
 (def great-books ["East of Eden" "The Glass Bead Game"])
