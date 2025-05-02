@@ -26,3 +26,34 @@
   ([x & next]
    `(let [and# ~x]
       (if and# (and ~@next) and#))))
+
+;; when writing a macro we want to tell the compiler clojure
+;; that we do not want to evaluate symbols, so was use the single quote
+;; to do that. By turning off the symbol evaluation we just return them.
+(defmacro my-print
+  [expression]
+  (list 'let ['result expression]
+        (list 'println 'result)
+        'result))
+
+;; example of actual 'when' macro
+(defmacro when
+  "Evaluates test. If logical true, evaluates body in an implicit do."
+  {:added "1.0"}
+  [test & body]
+  (list 'if test (cons 'do body)))
+
+;; example of actual 'unless' macro
+(defmacro unless
+  "Inverted 'if'"
+  [test & branches]
+  (conj (reverse branches) test 'if))
+
+;; applying what we learned and making a macro example
+(defmacro code-critic
+  "Phrase are courtesy Hermes Conrad from Futurama"
+  [bad good]
+  `(do println "Great squid of Madrid, this is bad code:"
+              (quote ~bad))
+        (println "Sweet gorilla of Manila, this is good code:"
+              (quote ~good)))
