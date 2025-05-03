@@ -50,10 +50,28 @@
   (conj (reverse branches) test 'if))
 
 ;; applying what we learned and making a macro example
+(defn criticize-code
+  [criticism code]
+  `(println ~criticism (quote ~code)))
+
 (defmacro code-critic
   "Phrase are courtesy Hermes Conrad from Futurama"
-  [bad good]
-  `(do println "Great squid of Madrid, this is bad code:"
-              (quote ~bad))
-        (println "Sweet gorilla of Manila, this is good code:"
-              (quote ~good)))
+  [{:keys [good bad]}]
+  `(do ~@(map #(apply criticize-code %)
+             [["Sweet lion of Zion, this is bad code:" bad]
+              ["Great cow of Moscow, this is good code:" good]])))
+
+;; sneaky gotchas of macros
+;; variable capture
+(def message "Good job!")
+(defmacro with-mischief
+  [& stuff-to-do]
+  (concat (list 'let ['message "Oh, big deal!"])
+          stuff-to-do))
+
+(defmacro without-mischief
+  [& stuff-to-do]
+  (let [macro-message (gensym 'message)]
+    `(let [~macro-message "Oh, big deal!"]
+       ~@stuff-to-do
+       (println "I still need to say: " ~macro-message))))
