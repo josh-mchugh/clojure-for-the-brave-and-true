@@ -75,3 +75,33 @@
     `(let [~macro-message "Oh, big deal!"]
        ~@stuff-to-do
        (println "I still need to say: " ~macro-message))))
+
+;; double evaluation gotchas
+(defmacro report
+  [to-try]
+  `(if ~to-try
+     (println (quote ~to-try) "was successful:" ~to-try)
+     (println (quote ~to-try) "was not successful:" ~to-try)))
+
+;; fix for double evaluation
+(defmacro report
+  [to-try]
+  `(let [result# ~to-try]
+     (if result#
+       (println (quote ~to-try) "was successful:" result#)
+       (println (quote ~to-try) "was not successful:" result#))))
+
+(comment
+  (report (do (Thread/sleep 1000) (+ 1 1)))
+  (report (= 1 1))
+  (report (= 1 2))
+  (doseq [code ['(= 1 1) '(= 1 2)]]
+    (report code)))
+
+(defmacro doseq-macro
+  [macroname & args]
+  `(do
+     ~@(map (fn [arg] (list macroname arg)) args)))
+
+(comment
+  (doseq-macro report (= 1 1) (= 1 2)))
