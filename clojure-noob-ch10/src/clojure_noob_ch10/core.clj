@@ -59,3 +59,43 @@
               :percent-deteriorated 0})
 
 @fred
+
+;; watching a variable on an atom
+(defn suffle-speed
+  [zombie]
+  (* (:cuddle-hunger-level zombie)
+     (- 100 (:percent-deteriorated zombie))))
+
+(defn shuffle-alert
+  [key watched old-state new-state]
+  (let [sph (suffle-speed new-state)]
+    (if (> sph 5000)
+      (do
+        (println "Run, you fool!")
+        (println "The zombie's SPH is now " sph)
+        (println "This message brought to your courtesy of " key))
+      (do
+        (println "All's well with " key)
+        (println "Cuddle hunger: " (:cuddle-hunger-level new-state))
+        (println "Percent deteriorated: " (:percent-deteriorated new-state))
+        (println "SPH: " sph)))))
+
+(reset! fred {:cuddle-hunger-level 22
+              :percent-deteriorated 2})
+(add-watch fred :fred-shuffle-alert shuffle-alert)
+
+(swap! fred update-in [:cuddle-hunger-level] + 30)
+
+;; Example of validators on an atom
+(defn percent-deteriorated-validator
+  [{:keys [percent-deteriorated]}]
+  (or (and (>= percent-deteriorated 0)
+           (<= percent-deteriorated 100))
+      (throw (IllegalStateException. "That's not mathy!"))))
+
+(def bobby
+  (atom
+   {:cuddle-hunger-level 0 :percent-deteriorated 0}
+    :validator percent-deteriorated-validator))
+   ))
+(swap! bobby update-in [:percent-deteriorated] + 200)
