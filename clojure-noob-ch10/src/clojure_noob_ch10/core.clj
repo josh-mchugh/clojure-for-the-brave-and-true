@@ -99,3 +99,88 @@
     :validator percent-deteriorated-validator))
    ))
 (swap! bobby update-in [:percent-deteriorated] + 200)
+
+;; Setting up example of gnome and dryer socks transfer
+(def sock-varieties
+  #{"darned" "argyle" "wool" "horsehair" "mulleted" "passive-agressive" "striped"
+    "polka-dotted" "athletic" "business" "power" "invisble" "gollumed"})
+
+(defn sock-count
+  [sock-variety count]
+  {:variety sock-variety
+   :count count})
+
+(defn generate-sock-gnome
+  "Create an initial sock gnome state with no socks"
+  [name]
+  {:name name
+   :socks #{}})
+
+;; creating ref to initial gnome and dryer
+(def sock-gnome (ref (generate-sock-gnome "Barumpharumph")))
+(def dryer (ref {:name "LG 1337"
+                 :socks (set (map #(sock-count % 2) sock-varieties))}))
+
+;; dereference a ref like atoms
+(:socks @dryer)
+
+;; using ref to update both dryer and gnome
+(defn steal-sock
+  [gnome dryer]
+  (dosync
+   (when-let [pair (some #(if (= (:count %) 2) %) (:socks @dryer))]
+     (let [updated-count (sock-count (:variety pair) 1)]
+       (alter gnome update-in [:socks] conj updated-count)
+       (alter dryer update-in [:socks] disj pair)
+       (alter dryer update-in [:socks] conj updated-count)))))
+
+(steal-sock sock-gnome dryer)
+
+(:socks @sock-gnome)
+
+;; determine similar socks between gnome and dryer
+(defn similar-socks
+  [target-sock sock-set]
+  (filter #(= (:variety %) (:variety target-sock)) sock-set))
+
+(similar-socks (first (:socks @sock-gnome)) (:socks @dryer))
+
+;; example of transaction state
+(def counter (ref 0))
+(future
+  (dosync
+   (alter counter inc)
+   (println @counter)
+   (Thread/sleep 500)
+   (alter counter inc)
+   (println @counter)))
+(Thread/sleep 250)
+(println @counter)
+
+;; example of safe and unsafe commute function
+(defn sleep-print-update
+  [sleep-time thread-name update-fn]
+  (fn [state]
+    (Thread/sleep sleep-time)
+    (println (str thread-name ": " state))
+    (update-fn state)))
+
+(def counter (ref 0))
+(future (dosync (commute counter (sleep-print-update 100 "Thead A" inc))))
+(future (dosync (commute counter (sleep-print-update 150 "Thread B" inc))))
+
+(def reciever-a (ref #{}))
+(def reciever-b (ref #{}))
+(def giver (ref #{1}))
+(do (future (dosync (let [gift (first @giver)]
+                      (Thread/sleep 10)
+                      (commute reciever-a conj gift)
+                      (commute giver disj gift))))
+    (future (dosync (let [gift (first @giver)]
+                      (Thread/sleep 50)
+                      (commute reciever-b conj gift)
+                      (commute giver disj gift)))))
+
+@reciever-a
+@reciever-b
+@giver
