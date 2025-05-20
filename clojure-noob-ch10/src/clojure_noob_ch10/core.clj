@@ -184,3 +184,127 @@
 @reciever-a
 @reciever-b
 @giver
+
+;; Vars can be constant but have a few tricks up their sleeve
+;; They can also be dynamic whose binding can change
+(def ^:dynamic *notification-address* "dobby@elf.org")
+
+(binding [*notification-address* "test@elf.org"]
+  *notification-address*)
+
+(binding [*notification-address* "tester-1@elf.org"]
+  (println *notification-address*)
+  (binding [*notification-address* "tester-2@elf.org"]
+    (println *notification-address*))
+  (println *notification-address*))
+
+;; pre-trend real world scenario
+(defn notify
+  [message]
+  (str "TO: " *notification-address* "\n"
+       "MESSAGE: " message))
+(notify "I fell.")
+
+;; test account not to spam dobly
+(binding [*notification-address* "test@elf.org"]
+  (notify "test!"))
+
+;; example of built in dynamic var *out*
+(binding [*out* (clojure.java.io/writer "print-output")]
+  (println "A man who carries a cat by the tail learns something he can learn no other way. -- Mark Twain"))
+(slurp "print-output")
+
+;; print-length allows you to specify how many items in a collection Clojure should print
+(println ["Print" "all" "the" "things!"])
+
+(binding [*print-length* 1]
+  (println ["Print" "just" "one!"]))
+
+;; example of troll riddle
+(def ^:dynamic *troll-thought* nil)
+
+(defn troll-riddle
+  [your-answer]
+  (let [number "man meat"]
+    (when (thread-bound? #'*troll-thought*)
+      (set! *troll-thought* number))
+    (if (= number your-answer)
+      "TROLL: You can cross the bridge!"
+      "TROLL: Time to eat you, succulent human!")))
+
+(binding [*troll-thought* nil]
+  (println (troll-riddle 2))
+  (println "SUCCULENT HUMAN: Oooooh! The answer was" *troll-thought*))
+
+*troll-thought*
+
+;; altering var roots
+(def power-source "hair")
+
+(alter-var-root #'power-source (fn [_] "7-eleven parking lot"))
+
+power-source
+
+;; examples of using pmap for parrallel map
+
+;; function to generate data
+(defn always-1
+  []
+  1)
+
+(take 5 (repeatedly  (partial rand-int 10)))
+
+(def alphabet-length 26)
+
+;; vector of chars A-Z
+(def letters (mapv (comp str char (partial + 65)) (range alphabet-length)))
+
+(defn random-string
+  "Returns a random string of specified length"
+  [length]
+  (apply str (take length (repeatedly #(rand-nth letters)))))
+
+(defn random-string-list
+  [list-length string-length]
+  (doall (take list-length (repeatedly (partial random-string string-length)))))
+
+(def orc-names (random-string-list 3000 7000))
+
+(time (dorun (map clojure.string/lower-case orc-names)))
+
+(time (dorun (pmap clojure.string/lower-case orc-names)))
+
+(def orc-name-abbrevs (random-string-list 20000 300))
+
+(time (dorun (map clojure.string/lower-case orc-name-abbrevs)))
+
+(time (dorun (pmap clojure.string/lower-case orc-name-abbrevs)))
+
+(def numbers [1 2 3 4 5 6 7 8 9 10])
+
+(partition-all 3 numbers)
+
+(pmap inc numbers)
+
+(pmap (fn [number-group] (doall (map inc number-group)))
+      (partition-all 3 numbers))
+
+(apply concat
+       (pmap (fn [number-group] (doall (map inc number-group)))
+             (partition-all 3 numbers)))
+
+(time
+ (dorun
+  (apply concat
+         (pmap (fn [name] (doall (map clojure.string/lower-case name)))
+               (partition-all 1000 orc-name-abbrevs)))))
+
+(defn ppmap
+  "Partitioned pmap, for grouping map ops together to make parallel overhead worthwhile"
+  [grain-size f & colls]
+  (apply concat
+         (apply pmap
+                (fn [& pgroups] (doall (apply map f pgroups)))
+                (map (partial partition-all grain-size) colls))))
+
+(time (dorun (ppmap 1000 clojure.string/lower-case orc-name-abbrevs)))
